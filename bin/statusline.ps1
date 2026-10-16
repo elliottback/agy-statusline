@@ -64,20 +64,34 @@ function Build-Bar([int]$pct, [int]$width) {
     return "${dim}[${reset}${barColor}${filledStr}${reset}${dim}${emptyStr}]${reset}"
 }
 
-function Format-ResetTime([string]$resetIso, [string]$style) {
-    if ([string]::IsNullOrWhiteSpace($resetIso) -or $resetIso -eq "null") {
-        return ""
-    }
-    try {
-        $dt = [DateTimeOffset]::Parse($resetIso, [System.Globalization.CultureInfo]::InvariantCulture).LocalDateTime
-        if ($style -eq "time") {
-            return $dt.ToString("HH:mm", [System.Globalization.CultureInfo]::InvariantCulture)
-        } else {
-            return $dt.ToString("MMM d, HH:mm", [System.Globalization.CultureInfo]::InvariantCulture).ToLowerInvariant()
+function Format-ResetTime([object]$qObj) {
+    if ($null -eq $qObj) { return "" }
+    
+    $totalSeconds = $null
+    if ($null -ne $qObj.reset_in_seconds) {
+        $totalSeconds = [double]$qObj.reset_in_seconds
+    } elseif (-not [string]::IsNullOrWhiteSpace($qObj.reset_time) -and $qObj.reset_time -ne "null") {
+        try {
+            $dt = [DateTimeOffset]::Parse([string]$qObj.reset_time, [System.Globalization.CultureInfo]::InvariantCulture)
+            $diff = $dt - [DateTimeOffset]::UtcNow
+            $totalSeconds = $diff.TotalSeconds
+        } catch {
+            return ""
         }
-    } catch {
+    }
+
+    if ($null -eq $totalSeconds -or $totalSeconds -le 0) {
         return ""
     }
+
+    $sec = [int][Math]::Round($totalSeconds)
+    if ($sec -ge 31536000) { return "$([int][Math]::Round($sec / 31536000.0))y" }
+    if ($sec -ge 2592000)  { return "$([int][Math]::Round($sec / 2592000.0))mo" }
+    if ($sec -ge 604800)   { return "$([int][Math]::Round($sec / 604800.0))w" }
+    if ($sec -ge 86400)    { return "$([int][Math]::Round($sec / 86400.0))d" }
+    if ($sec -ge 3600)     { return "$([int][Math]::Round($sec / 3600.0))h" }
+    if ($sec -ge 60)       { return "$([int][Math]::Round($sec / 60.0))m" }
+    return "${sec}s"
 }
 
 # -- Extract JSON data ------------------------------------
@@ -207,7 +221,7 @@ if ($data.quota) {
             IsActive  = $isActive
             Pool      = $pool
             Remaining = [double]$q.remaining_fraction
-            ResetIso  = if ($q.reset_time) { [string]$q.reset_time } else { "" }
+            QuotaObj  = $q
         })
     }
 }
@@ -231,7 +245,7 @@ foreach ($b in $sorted) {
     $bar      = Build-Bar $pct $barWidth
     $color    = Get-ColorForPct $pct
     $pctFmt   = "{0,3}" -f $pct
-    $resetFmt = Format-ResetTime $b.ResetIso $b.Style
+    $resetFmt = Format-ResetTime $b.QuotaObj
     $name     = ("{0} {1}" -f $b.Label, $b.Window).PadRight($labelWidth)
     $nameColor = if ($b.IsActive) { $white } else { $dim }
 
