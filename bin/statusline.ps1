@@ -126,9 +126,9 @@ $stateIcon = switch ($agentState) {
 # -- LINE 1: Model | Context % | Directory (branch) | Plan --
 $ctxColor = Get-ColorForPct $ctxPct
 
-$line1 = "${blue}${modelName}${reset}"
+$line1 = "${blue}${modelName}${reset}{{QUOTA}}"
 $line1 += $sep
-$line1 += "${symPen}  ${ctxColor}${ctxPct}%${reset}"
+$line1 += "${symPen}  ${dim}ctx${reset} ${ctxColor}${ctxPct}%${reset}"
 $line1 += $sep
 $line1 += "${stateIcon}${cyan}${dirname}${reset}"
 if (-not [string]::IsNullOrEmpty($gitBranch)) {
@@ -168,6 +168,7 @@ function Get-WindowInfo([string]$window) {
 
 $poolLabel = if ($quotaPool -eq "3p") { "claude" } else { "gemini" }
 $buckets = New-Object System.Collections.Generic.List[object]
+$poolLabels = @{ "3p" = "claude/gpt"; "gemini" = "gemini" }
 
 if ($data.quota) {
     foreach ($prop in $data.quota.PSObject.Properties) {
@@ -176,18 +177,24 @@ if ($data.quota) {
 
         $segments = @($prop.Name.ToLowerInvariant() -split '-')
         if ($segments.Count -lt 2) { continue }
-        if ($segments[0] -ne $quotaPool) { continue }
 
+        $pool   = $segments[0]
         $window = $segments[-1]
         $middle = if ($segments.Count -gt 2) { @($segments[1..($segments.Count - 2)]) } else { @() }
 
-        $label = $poolLabel
-        $isSub = $false
+        $label    = if ($poolLabels.ContainsKey($pool)) { $poolLabels[$pool] } else { $pool }
+        $isSub    = $false
+        $isActive = ($pool -eq $quotaPool)
         if ($middle.Count -gt 0) {
+            # Model-specific bucket, e.g. gemini-argon-wtu-weekly -> "argon"
+            $isSub   = $true
             $matched = @($middle | Where-Object { $modelTokens -contains $_ })
-            if ($matched.Count -eq 0) { continue }   # bucket for a different model
-            $label = $matched -join " "
-            $isSub = $true
+            if ($matched.Count -gt 0) {
+                $label = $matched -join " "
+            } else {
+                $label = $middle[0]
+                $isActive = $false
+            }
         }
 
         $info = Get-WindowInfo $window
@@ -197,13 +204,22 @@ if ($data.quota) {
             Order     = $info.Order
             Style     = $info.Style
             IsSub     = $isSub
+            IsActive  = $isActive
+            Pool      = $pool
             Remaining = [double]$q.remaining_fraction
             ResetIso  = if ($q.reset_time) { [string]$q.reset_time } else { "" }
         })
     }
 }
 
-$sorted = @($buckets | Sort-Object -Property @{ Expression = "Order" }, @{ Expression = "IsSub" }, @{ Expression = "Label" })
+# Active-model buckets first, then the rest grouped by pool
+$sorted = @($buckets | Sort-Object -Property `
+    @{ Expression = { -not $_.IsActive } }, `
+    @{ Expression = { $_.Pool -ne $quotaPool } }, `
+    @{ Expression = "Pool" }, `
+    @{ Expression = "IsSub" }, `
+    @{ Expression = "Label" }, `
+    @{ Expression = "Order" })
 $labelWidth = 0
 foreach ($b in $sorted) {
     $len = ("{0} {1}" -f $b.Label, $b.Window).Length
@@ -217,13 +233,25 @@ foreach ($b in $sorted) {
     $pctFmt   = "{0,3}" -f $pct
     $resetFmt = Format-ResetTime $b.ResetIso $b.Style
     $name     = ("{0} {1}" -f $b.Label, $b.Window).PadRight($labelWidth)
+    $nameColor = if ($b.IsActive) { $white } else { $dim }
 
-    $qLine = "${white}${name}${reset} ${bar} ${color}${pctFmt}%${reset}"
+    $qLine = "${nameColor}${name}${reset} ${bar} ${color}${pctFmt}%${reset}"
     if (-not [string]::IsNullOrEmpty($resetFmt)) {
-        $qLine += " ${dim}${symReset}${reset} ${white}${resetFmt}${reset}"
+        $qLine += " ${dim}${symReset}${reset} ${nameColor}${resetFmt}${reset}"
     }
     $quotaLines.Add($qLine)
 }
+
+# -- Top line: binding (most-used) quota for the active model --
+$quotaSeg = ""
+$activeBuckets = @($sorted | Where-Object { $_.IsActive })
+if ($activeBuckets.Count -gt 0) {
+    $binding = $activeBuckets | Sort-Object -Property Remaining | Select-Object -First 1
+    $bPct    = [int][Math]::Round((1.0 - $binding.Remaining) * 100.0, [System.MidpointRounding]::AwayFromZero)
+    $bColor  = Get-ColorForPct $bPct
+    $quotaSeg = " ${bColor}${bPct}%${reset} ${dim}($($binding.Label) $($binding.Window))${reset}"
+}
+$line1 = $line1.Replace("{{QUOTA}}", $quotaSeg)
 
 # -- Output -----------------------------------------------
 [Console]::Out.Write($line1)
