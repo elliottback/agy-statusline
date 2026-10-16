@@ -66,9 +66,11 @@ The installer configures the following in `%USERPROFILE%\.gemini\antigravity-cli
 ```json
 "statusLine": {
   "type": "command",
-  "command": "powershell -NoProfile -ExecutionPolicy Bypass -Command & $HOME\\.gemini\\statusline.ps1",
+  "command": "powershell -NoProfile -ExecutionPolicy Bypass -File %USERPROFILE%\\.gemini\\statusline.ps1",
   "enabled": true
 }
 ```
+
+> **Note:** On Windows, `agy` runs this command via `cmd.exe /c` and escapes embedded `"` as `\"`, which cmd does not understand. Keep the command free of double quotes and cmd metacharacters (`&`, `|`, `<`, `>`, `^`). `%USERPROFILE%` is expanded by cmd.
 
 You can also toggle the status line at any time from within `agy` using `/statusline`.

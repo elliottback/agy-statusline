@@ -69,7 +69,7 @@ if ([string]::IsNullOrWhiteSpace($rawSettings)) {
 }
 $settings = $rawSettings | ConvertFrom-Json
 
-$statusCmd  = 'powershell -NoProfile -ExecutionPolicy Bypass -Command & $HOME\.gemini\statusline.ps1'
+$statusCmd  = 'powershell -NoProfile -ExecutionPolicy Bypass -File %USERPROFILE%\.gemini\statusline.ps1'
 $currentCmd = if ($settings.PSObject.Properties['statusLine'] -and $settings.statusLine.command) {
     [string]$settings.statusLine.command
 } else {
