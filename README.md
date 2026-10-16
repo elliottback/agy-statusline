@@ -7,11 +7,11 @@ Windows PowerShell port of [Ranteck/agy-statusline](https://github.com/Ranteck/a
 ```
 Gemini 4 Argon (Medium) 75% (argon 7d) │ ✍️  ctx 0% │ my-project (main*) │ Google AI Pro
 
-gemini 5h     [░░░░░░░░░░░░░░░░░░░░]   0% ⟳ 04:03
-gemini 7d     [░░░░░░░░░░░░░░░░░░░░]   0% ⟳ oct 23, 14:04
-argon 7d      [███████████████░░░░░]  75% ⟳ oct 23, 13:48
-claude/gpt 5h [██████████░░░░░░░░░░]  52% ⟳ 04:11
-claude/gpt 7d [███████████████░░░░░]  76% ⟳ oct 22, 17:01
+gemini 5h     [░░░░░░░░░░░░░░░░░░░░]   0% ⟳ 5h
+gemini 7d     [░░░░░░░░░░░░░░░░░░░░]   0% ⟳ 7d
+argon 7d      [███████████████░░░░░]  75% ⟳ 7d
+claude/gpt 5h [██████████░░░░░░░░░░]  52% ⟳ 5h
+claude/gpt 7d [███████████████░░░░░]  76% ⟳ 6d
 ```
 
 | Field | Description |
@@ -23,7 +23,7 @@ claude/gpt 7d [███████████████░░░░░]  76
 | `<pool> 5h` / `<pool> 7d` | Rolling 5-hour and weekly quota used, per pool |
 | `<model> 7d` | Model-specific bucket (e.g. `argon`) when `agy` reports one |
 
-> Quota percentages and bars show **used**, i.e. `100 − remaining` as shown in `/usage`. Colours: green < 50%, yellow 50–79%, red ≥ 80%.
+> Quota percentages and bars show **used**, i.e. `100 − remaining` as shown in `/usage`. Colours: green < 50%, yellow 50–79%, red ≥ 80%. Refresh countdowns use compact single-unit relative microtime (`5h`, `7d`, `45m`, `30s`, `2w`, `3mo`, `1y`).
 
 ### How quota buckets are discovered
 
@@ -44,7 +44,7 @@ All buckets are shown. Those that apply to the active model are listed first in 
 ## Installation
 
 ```powershell
-git clone https://github.com/your-username/agy-statusline
+git clone https://github.com/elliottback/agy-statusline
 cd agy-statusline
 powershell -ExecutionPolicy Bypass -File .\bin\install.ps1
 ```
@@ -87,3 +87,7 @@ The installer configures the following in `%USERPROFILE%\.gemini\antigravity-cli
 > **Note:** On Windows, `agy` runs this command via `cmd.exe /c` and escapes embedded `"` as `\"`, which cmd does not understand. Keep the command free of double quotes and cmd metacharacters (`&`, `|`, `<`, `>`, `^`). `%USERPROFILE%` is expanded by cmd.
 
 You can also toggle the status line at any time from within `agy` using `/statusline`.
+
+## Credits
+
+This project is a Windows PowerShell port of [Ranteck/agy-statusline](https://github.com/Ranteck/agy-statusline) by [@Ranteck](https://github.com/Ranteck), adapted for native Windows PowerShell without `jq` or bash dependencies, with added support for dynamic multi-pool quota discovery (including Google Argon and Claude/GPT pools) and single-unit microtime countdowns.
