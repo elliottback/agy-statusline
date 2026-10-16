@@ -66,7 +66,7 @@ The installer configures the following in `%USERPROFILE%\.gemini\antigravity-cli
 ```json
 "statusLine": {
   "type": "command",
-  "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"%USERPROFILE%\\.gemini\\statusline.ps1\"",
+  "command": "powershell -NoProfile -ExecutionPolicy Bypass -Command & $HOME\\.gemini\\statusline.ps1",
   "enabled": true
 }
 ```
