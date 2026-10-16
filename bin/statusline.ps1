@@ -36,17 +36,16 @@ $reset   = "$esc[0m"
 $symBar   = [char]0x2502                             # vertical bar
 $symPen   = "$([char]0x270D)$([char]0xFE0F)"         # writing hand
 $symZap   = [char]0x26A1                             # high voltage
-$symFull  = [char]0x25CF                             # filled circle
-$symEmpty = [char]0x25CB                             # empty circle
+$symFull  = [char]0x2588                             # full block
+$symEmpty = [char]0x2591                             # light shade
 $symReset = [char]0x27F3                             # clockwise arrow
 
 $sep = " ${dim}${symBar}${reset} "
 
 # -- Helpers ---------------------------------------------
 function Get-ColorForPct([int]$pct) {
-    if ($pct -ge 90)     { return $red }
-    elseif ($pct -ge 70) { return $yellow }
-    elseif ($pct -ge 50) { return $orange }
+    if ($pct -ge 80)     { return $red }
+    elseif ($pct -ge 50) { return $yellow }
     else                 { return $green }
 }
 
@@ -54,14 +53,15 @@ function Build-Bar([int]$pct, [int]$width) {
     if ($pct -lt 0)   { $pct = 0 }
     if ($pct -gt 100) { $pct = 100 }
 
-    $filled = [int][Math]::Floor(($pct * $width) / 100)
+    $filled = [int][Math]::Round(($pct * $width) / 100.0, [System.MidpointRounding]::AwayFromZero)
+    if ($pct -gt 0 -and $filled -eq 0) { $filled = 1 }
     $empty  = $width - $filled
     $barColor = Get-ColorForPct $pct
 
     $filledStr = [string]::new($symFull, $filled)
     $emptyStr  = [string]::new($symEmpty, $empty)
 
-    return "${barColor}${filledStr}${dim}${emptyStr}${reset}"
+    return "${dim}[${reset}${barColor}${filledStr}${reset}${dim}${emptyStr}]${reset}"
 }
 
 function Format-ResetTime([string]$resetIso, [string]$style) {
@@ -153,7 +153,7 @@ if ($modelText -match 'claude|anthropic|gpt|openai|\b3p\b') {
 # "<pool>-<subpool...>-<window>" for model-specific buckets
 # (e.g. gemini-argon-wtu-weekly). We show the active pool's base buckets
 # plus any sub-pool bucket whose segments match a word in the active model.
-$barWidth = 10
+$barWidth = 20
 $quotaLines = New-Object System.Collections.Generic.List[string]
 
 function Get-WindowInfo([string]$window) {
