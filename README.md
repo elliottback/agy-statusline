@@ -5,23 +5,22 @@ Windows PowerShell port of [Ranteck/agy-statusline](https://github.com/Ranteck/a
 ## What it shows
 
 ```
-Gemini 4 Argon (Medium) 75% (argon 7d) │ ✍️  ctx 0% │ my-project (main*) │ Google AI Pro
+Gemini 4 Carbon (Medium) 40% (gemini 7d) │ ✍️  ctx 12% │ my-project (main*) │ Google AI Pro
 
-gemini 5h     [░░░░░░░░░░░░░░░░░░░░]   0% ⟳ 5h
-gemini 7d     [░░░░░░░░░░░░░░░░░░░░]   0% ⟳ 7d
-argon 7d      [███████████████░░░░░]  75% ⟳ 7d
+gemini 5h     [███░░░░░░░░░░░░░░░░░]  15% ⟳ 4h
+gemini 7d     [████████░░░░░░░░░░░░]  40% ⟳ 5d
 claude/gpt 5h [██████████░░░░░░░░░░]  52% ⟳ 5h
 claude/gpt 7d [███████████████░░░░░]  76% ⟳ 6d
 ```
 
 | Field | Description |
 |-------|-------------|
-| Model + `%` | Active model, followed by its **binding quota** — the most-used limit that applies to it (e.g. `75% (argon 7d)`) |
+| Model + `%` | Active model, followed by its **binding quota** — the most-used limit that applies to it (e.g. `40% (gemini 7d)`) |
 | `✍️ ctx %` | Context window usage for the current session (not quota) |
 | Directory (branch*) | Working directory + git branch (`*` = uncommitted changes) |
 | Plan | Account tier (Google AI Pro, etc.) |
 | `<pool> 5h` / `<pool> 7d` | Rolling 5-hour and weekly quota used, per pool |
-| `<model> 7d` | Model-specific bucket (e.g. `argon`) when `agy` reports one |
+| `<model> 7d` | Model-specific bucket (e.g. `argon`) when `agy` reports a separate one |
 
 > Quota percentages and bars show **used**, i.e. `100 − remaining` as shown in `/usage`. Colours: green < 50%, yellow 50–79%, red ≥ 80%. Refresh countdowns use compact single-unit relative microtime (`5h`, `7d`, `45m`, `30s`, `2w`, `3mo`, `1y`).
 
@@ -29,9 +28,9 @@ claude/gpt 7d [███████████████░░░░░]  76
 
 Every key under `quota` in the JSON `agy` sends is parsed as `<pool>[-<subpool>...]-<window>`:
 
-- `gemini-5h`, `gemini-weekly` → **gemini** pool
+- `gemini-5h`, `gemini-weekly` → **gemini** pool (all Gemini models, including Hydrogen, Argon, and Carbon)
 - `3p-5h`, `3p-weekly` → **claude/gpt** pool (Claude Opus, Claude Sonnet, GPT-OSS)
-- `gemini-argon-wtu-weekly` → model-specific **argon** bucket
+- `<pool>-<subpool>-<window>` (e.g. `gemini-argon-wtu-weekly`) → model-specific bucket, if `agy` reports one
 
 All buckets are shown. Those that apply to the active model are listed first in white; the rest are dimmed. New pools or model-specific buckets appear automatically — no code changes needed.
 
@@ -90,4 +89,4 @@ You can also toggle the status line at any time from within `agy` using `/status
 
 ## Credits
 
-This project is a Windows PowerShell port of [Ranteck/agy-statusline](https://github.com/Ranteck/agy-statusline) by [@Ranteck](https://github.com/Ranteck), adapted for native Windows PowerShell without `jq` or bash dependencies, with added support for dynamic multi-pool quota discovery (including Google Argon and Claude/GPT pools) and single-unit microtime countdowns.
+This project is a Windows PowerShell port of [Ranteck/agy-statusline](https://github.com/Ranteck/agy-statusline) by [@Ranteck](https://github.com/Ranteck), adapted for native Windows PowerShell without `jq` or bash dependencies, with added support for dynamic multi-pool quota discovery and single-unit microtime countdowns.
